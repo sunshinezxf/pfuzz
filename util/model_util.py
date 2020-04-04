@@ -13,6 +13,7 @@ def build_seq_model():
         tf.keras.layers.Dense(10)
     ])
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    # loss_fn = tf.keras.losses.sparse_categorical_crossentropy()
     model.compile(optimizer='adam', loss=loss_fn, metrics=['accuracy'])
     model.summary()
     return model
@@ -41,10 +42,10 @@ def build_lenet_model():
     return model
 
 
-def convert_fp16_model(saved_model_dir):
-    converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_dir)
+def convert_fp16_model(model):
+    converter = tf.compat.v2.lite.TFLiteConverter.from_keras_model(model)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
-    converter.target_spec.supported_types = [tf.lite.constants.FLOAT16]
+    converter.target_spec.supported_types = [tf.compat.v1.lite.constants.FLOAT16]
     Tflite_quanit_model = converter.convert()
     return Tflite_quanit_model
 

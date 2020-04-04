@@ -7,6 +7,7 @@ import tensorflow as tf
 import util.model_util as model_util
 
 from keras.utils import np_utils
+from tensorflow.keras.models import load_model
 
 
 def prepare_data(dataset):
@@ -15,7 +16,7 @@ def prepare_data(dataset):
     return (train_input, train_output), (test_input, test_output)
 
 
-def run_basic(file_name, dtype, dataset, times=50):
+def run_basic(file_name, dtype, dataset, times=1):
     output_file = open(file_name, "a", newline="")
     writer = csv.writer(output_file)
 
@@ -27,7 +28,7 @@ def run_basic(file_name, dtype, dataset, times=50):
         begin_time = time()
         model = model_util.build_seq_model()
         (x_train, y_train), (x_test, y_test) = prepare_data(dataset)
-        model.fit(x_train, y_train, epochs=5)
+        model.fit(x_train, y_train, epochs=10)
         train_time = time()
         result = model.evaluate(x_test, y_test, verbose=1)
         done_time = time()
@@ -37,8 +38,32 @@ def run_basic(file_name, dtype, dataset, times=50):
         print("finish writing record, current i: " + str(i))
     output_file.close()
 
+def run_basic16(file_name, dtype, dataset, times=1):
+    output_file = open(file_name, "a", newline="")
+    writer = csv.writer(output_file)
 
-def run_lenet(file_name, dtype, dataset, times=100):
+    tf.keras.backend.set_floatx(dtype)
+
+    for i in range(times):
+        print(tf.keras.backend.floatx())
+        # 统计每次的耗时、loss、accuracy
+        begin_time = time()
+        model = model_util.build_seq_model()
+        (x_train, y_train), (x_test, y_test) = prepare_data(dataset)
+        model.fit(x_train, y_train, epochs=1)
+        train_time = time()
+        result = model.evaluate(x_test, y_test, verbose=1)
+        done_time = time()
+        print(result)
+        writer.writerow([result[0], result[1], train_time - begin_time, done_time - train_time])
+        dir = "./model/"+"seqential_" + dtype + "_" + str(i) + ".h5"
+        model_util.save(model, "seqential_" + dtype + "_" + str(i) + ".h5")
+        new_model =load_model(dir)
+        model16 = model_util.convert_fp16_model(new_model)
+        print("finish writing record, current i: " + str(i))
+    output_file.close()
+
+def run_lenet(file_name, dtype, dataset, times=50):
     output_file = open(file_name, "a", newline="")
     writer = csv.writer(output_file)
 
@@ -56,9 +81,10 @@ def run_lenet(file_name, dtype, dataset, times=100):
         y_train = np_utils.to_categorical(y_train, num_classes=10)
         y_test = np_utils.to_categorical(y_test, num_classes=10)
 
-        model.fit(x_train, y_train, batch_size=128, epochs=200, shuffle=True)
+        model.fit(x_train, y_train, batch_size=128, epochs=10, shuffle=True)
         train_time = time()
         result = model.evaluate(x_test, y_test, verbose=1)
+
         done_time = time()
         print(result)
         writer.writerow([result[0], result[1], train_time - begin_time, done_time - train_time])
@@ -69,8 +95,9 @@ def run_lenet(file_name, dtype, dataset, times=100):
 
 if __name__ == '__main__':
     mnist = tf.keras.datasets.mnist
-    # run_basic("./mnist_float32.csv", "float32", mnist)
-    # run_basic("./mnist_float64.csv", "float64", mnist)
 
-    run_lenet("./mnist_lenet_float32.csv", "float32", mnist)
-    run_lenet("./mnist_lenet_float64.csv", "float64", mnist)
+    # run_lenet("./mnist_lenet_float16.csv", "float16", mnist)
+    # run_lenet("./mnist_lenet_float32.csv", "float32", mnist)
+    #
+    # run_basic("./mnist_basic_float16.csv", "float16", mnist)
+    run_basic16("./mnist_basic_float32.csv", "float32", mnist)
