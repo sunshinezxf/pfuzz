@@ -37,16 +37,26 @@ def build_seq1_model():
     model.summary()
     return model
 def build_basic1_model():
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(kernel_size=(2,2),input_shape=(28, 28, 1),filters=4, padding='valid', activation='relu',),
-        tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2)),
-
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dropout(0.2),
-        tf.keras.layers.Dense(10,activation='softmax')
-
-    ])
+    # model = tf.keras.models.Sequential([
+    #
+    #     tf.keras.layers.Conv2D(kernel_size=(2,2),input_shape=(28, 28, 1),filters=4, padding='valid', activation='relu'),
+    #     tf.keras.layers.MaxPool2D((2, 2), strides=(2, 2)),
+    #
+    #     tf.keras.layers.Flatten(),
+    #     tf.keras.layers.Dense(128, activation='relu'),
+    #     tf.keras.layers.Dropout(0.2),
+    #     tf.keras.layers.Dense(10,activation='softmax')
+    #
+    #
+    # ])
+    model = Sequential()
+    model.add(Conv2D(4, (2, 2), padding='valid', activation='relu',
+                     input_shape=(28, 28, 1)))
+    model.add(MaxPooling2D((2, 2), strides=(2, 2)))
+    model.add(Flatten())
+    model.add(Dense(128, activation='relu'))
+    model.add(Dropout(0.2))
+    model.add(Dense(10,activation='softmax'))
 
     #loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
     # loss_fn = tf.keras.losses.sparse_categorical_crossentropy()
@@ -202,11 +212,14 @@ def build_ZFnet1_model():
     model.summary()
     return model
 
-def convert_fp16_model(model):
+def convert_fp16_model(model,file="newModel.tflite"):
     converter = tf.compat.v2.lite.TFLiteConverter.from_keras_model(model)
+    converter.target_spec.supported_ops = [tf.lite.OpsSet.SELECT_TF_OPS]    #使用TensorFlow运算符
+    #converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS,tf.lite.OpsSet.SELECT_TF_OPS]
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     converter.target_spec.supported_types = [tf.compat.v1.lite.constants.FLOAT16]
     Tflite_quanit_model = converter.convert()
+    #open(file,"wb").write(Tflite_quanit_model )
     return Tflite_quanit_model
 
 
